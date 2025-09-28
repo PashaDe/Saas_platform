@@ -1,0 +1,13 @@
+__pycache__/
+.venv/
+.env
+.DS_Store
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+*.sqlite3
+*.log
+coverage/
+
+
