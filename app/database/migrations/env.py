@@ -3,6 +3,13 @@ from __future__ import with_statement
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
+import os
+import sys
+
+# Ensure project root is on sys.path so `import app` works inside Alembic
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 
 from app.models.base import Base
 
