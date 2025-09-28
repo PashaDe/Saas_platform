@@ -27,6 +27,15 @@ class SignupIn(BaseModel):
     password: str
     company_name: str
 
+    @classmethod
+    def model_validate(cls, obj, *args, **kwargs):  # type: ignore[override]
+        data = super().model_validate(obj, *args, **kwargs)
+        if len(data.password.encode("utf-8")) > 128:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password too long")
+        if len(data.password) < 6:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password too short")
+        return data
+
 
 class MeOut(BaseModel):
     id: str
