@@ -2,6 +2,10 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
+from app.models.company_models import Company
+from app.schemas.company_schemas import CompanyCreate, CompanyOut
+from sqlalchemy import select
+import uuid
 
 
 router = APIRouter(prefix="/companies", tags=["companies"])
@@ -9,13 +13,22 @@ router = APIRouter(prefix="/companies", tags=["companies"])
 
 @router.get("")
 async def list_companies(db: AsyncSession = Depends(get_db)) -> dict:
-    # TODO: query companies filtered by tenant/admin role
-    return {"items": [], "total": 0}
+    result = await db.execute(select(Company))
+    items = [CompanyOut.model_validate(row) for row in result.scalars().all()]
+    return {"items": items, "total": len(items)}
 
 
-@router.post("")
-async def create_company(db: AsyncSession = Depends(get_db)) -> dict:
-    # TODO: insert company
-    return {"id": "placeholder"}
+@router.post("", response_model=CompanyOut)
+async def create_company(payload: CompanyCreate, db: AsyncSession = Depends(get_db)) -> CompanyOut:
+    company = Company(
+        id=uuid.uuid4(),
+        name=payload.name,
+        subdomain=payload.subdomain,
+        plan_type=payload.plan_type,
+    )
+    db.add(company)
+    await db.commit()
+    await db.refresh(company)
+    return CompanyOut.model_validate(company)
 
 
