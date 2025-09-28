@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
 from app.models.company_models import Company
 from app.schemas.company_schemas import CompanyCreate, CompanyOut
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 import uuid
 
 
@@ -27,7 +28,15 @@ async def create_company(payload: CompanyCreate, db: AsyncSession = Depends(get_
         plan_type=payload.plan_type,
     )
     db.add(company)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        # Likely unique subdomain violation
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Company with this subdomain already exists",
+        )
     await db.refresh(company)
     return CompanyOut.model_validate(company)
 

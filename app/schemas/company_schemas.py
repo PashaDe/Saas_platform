@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from uuid import UUID
 
 
 class CompanyCreate(BaseModel):
@@ -9,7 +10,7 @@ class CompanyCreate(BaseModel):
 
 
 class CompanyOut(BaseModel):
-    id: str
+    id: UUID
     name: str
     subdomain: Optional[str] = None
     plan_type: Optional[str] = None
