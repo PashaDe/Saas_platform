@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     postgres_password: str | None = None
     postgres_sync_url: str | None = None
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", extra="allow")
 
 
 settings = Settings()
