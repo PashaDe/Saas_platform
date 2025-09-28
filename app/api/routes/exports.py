@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db
 from app.schemas.integration_schemas import ExportConfigCreate, ExportConfigOut
 from app.models.integration_models import ExportConfig
+from app.models.company_models import Company
+from fastapi import HTTPException, status
 from sqlalchemy import select
 import uuid
 from app.api.routes.auth import get_current_user, MeOut
@@ -20,9 +22,14 @@ async def list_configs(current: MeOut = Depends(get_current_user), db: AsyncSess
 
 @router.post("/configs", response_model=ExportConfigOut)
 async def create_config(payload: ExportConfigCreate, current: MeOut = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> ExportConfigOut:
+    # Ensure company from token exists to avoid FK 500
+    company_id = uuid.UUID(current.company_id)
+    exists = await db.execute(select(Company.id).where(Company.id == company_id))
+    if exists.scalar_one_or_none() is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid company context. Re-login and try again.")
     config = ExportConfig(
         id=uuid.uuid4(),
-        company_id=uuid.UUID(current.company_id),
+        company_id=company_id,
         entity_type=payload.entity_type,
         filters_json=payload.filters_json,
         mapping_json=payload.mapping_json,
