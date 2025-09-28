@@ -1,12 +1,10 @@
 from __future__ import with_statement
 
 from logging.config import fileConfig
-from sqlalchemy import pool
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy import pool, create_engine
 from alembic import context
 import os
 import sys
-import asyncio
 
 # Ensure project root is on sys.path so `import app` works inside Alembic
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
@@ -29,27 +27,21 @@ def run_migrations_offline():
         context.run_migrations()
 
 
-def _run_sync_migrations(connection):
-    context.configure(connection=connection, target_metadata=target_metadata)
-    with context.begin_transaction():
-        context.run_migrations()
-
-
-async def run_migrations_online():
-    connectable = create_async_engine(
-        config.get_main_option("sqlalchemy.url"),
-        poolclass=pool.NullPool,
+def run_migrations_online():
+    url = os.getenv("POSTGRES_SYNC_URL") or config.get_main_option("sqlalchemy.url").replace(
+        "+asyncpg", "+psycopg2"
     )
+    connectable = create_engine(url, poolclass=pool.NullPool)
 
-    async with connectable.connect() as connection:
-        await connection.run_sync(_run_sync_migrations)
-
-    await connectable.dispose()
+    with connectable.connect() as connection:
+        context.configure(connection=connection, target_metadata=target_metadata)
+        with context.begin_transaction():
+            context.run_migrations()
 
 
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    asyncio.run(run_migrations_online())
+    run_migrations_online()
 
 
